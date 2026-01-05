@@ -9,7 +9,7 @@ Key Feature: AgentTool automatically wraps agents as tools - NO manual wrappers 
 
 This is a direct comparison to samples/07_langchain_supervisor_example.py
 
-Run: python samples/08_adk_agenttool_comparison.py
+Run: python adk_agenttool_comparison.py
 
 Requirements:
     export GOOGLE_API_KEY='your-key'
@@ -222,8 +222,9 @@ async def demo_adk_agenttool():
                 event_count += 1
                 
                 # Track which agent was called
-                if hasattr(event, 'tool_calls') and event.tool_calls:
-                    for tool_call in event.tool_calls:
+                tool_calls = getattr(event, 'tool_calls', None)
+                if tool_calls:
+                    for tool_call in tool_calls:
                         tool_name = getattr(tool_call, 'name', 'unknown')
                         if 'agent' in tool_name.lower():
                             agent_called = tool_name

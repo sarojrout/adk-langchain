@@ -9,7 +9,7 @@ Key Feature: You must manually write wrapper functions to expose agents as tools
 
 Based on: https://docs.langchain.com/oss/python/langchain/multi-agent/subagents-personal-assistant
 
-Run: python samples/07_langchain_supervisor_example.py
+Run: python langchain_supervisor_example.py
 
 Requirements:
     pip install langchain langchain-openai
@@ -18,13 +18,19 @@ Requirements:
 
 import os
 import asyncio
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Check for LangChain
+# Import for type checking to satisfy linter
+if TYPE_CHECKING:
+    from langchain.agents import create_agent
+    from langchain.tools import tool
+    from langchain.chat_models import init_chat_model
+
+# Check for LangChain (runtime import)
 try:
     from langchain.agents import create_agent
     from langchain.tools import tool
@@ -38,13 +44,13 @@ except ImportError:
 # Step 1: Define Function Tools
 # ------------------------------------------------------------------
 
-@tool
+@tool  # type: ignore[possibly-unbound]
 def get_weather_info(city: str) -> str:
     """Get weather information for a city"""
     # Stub implementation - in production would call weather API
     return f"Weather in {city}: 72°F, sunny with light breeze. Perfect for outdoor activities!"
 
-@tool
+@tool  # type: ignore[possibly-unbound]
 def create_workout_plan(fitness_level: str, goal: str) -> str:
     """Create a personalized workout plan"""
     plans = {
@@ -56,7 +62,7 @@ def create_workout_plan(fitness_level: str, goal: str) -> str:
     plan = plans.get(level, plans["beginner"])
     return f"Workout plan for {level} level ({goal}): {plan}"
 
-@tool
+@tool  # type: ignore[possibly-unbound]
 def suggest_meal(meal_type: str, dietary_preferences: str = "none") -> str:
     """Suggest a healthy meal based on type and preferences"""
     suggestions = {
@@ -81,11 +87,11 @@ if LANGCHAIN_AVAILABLE:
     
     if api_key:
         if os.getenv("OPENAI_API_KEY"):
-            model = init_chat_model("openai:gpt-4o-mini")
+            model = init_chat_model("openai:gpt-4o-mini")  # type: ignore[possibly-unbound]
         elif os.getenv("ANTHROPIC_API_KEY"):
-            model = init_chat_model("anthropic:claude-3-5-haiku-20241022")
+            model = init_chat_model("anthropic:claude-3-5-haiku-20241022")  # type: ignore[possibly-unbound]
         elif os.getenv("GOOGLE_API_KEY"):
-            model = init_chat_model("google_genai:gemini-2.5-flash-lite")
+            model = init_chat_model("google_genai:gemini-2.5-flash-lite")  # type: ignore[possibly-unbound]
         else:
             model = None
     else:
@@ -100,7 +106,7 @@ if LANGCHAIN_AVAILABLE:
             "Be friendly and helpful."
         )
         
-        weather_agent = create_agent(
+        weather_agent = create_agent(  # type: ignore[possibly-unbound]
             model,
             tools=[get_weather_info],
             system_prompt=WEATHER_PROMPT
@@ -114,7 +120,7 @@ if LANGCHAIN_AVAILABLE:
             "Be encouraging and provide actionable advice."
         )
         
-        fitness_agent = create_agent(
+        fitness_agent = create_agent(  # type: ignore[possibly-unbound]
             model,
             tools=[create_workout_plan],
             system_prompt=FITNESS_PROMPT
@@ -128,7 +134,7 @@ if LANGCHAIN_AVAILABLE:
             "Provide evidence-based advice."
         )
         
-        nutrition_agent = create_agent(
+        nutrition_agent = create_agent(  # type: ignore[possibly-unbound]
             model,
             tools=[suggest_meal],
             system_prompt=NUTRITION_PROMPT
@@ -140,7 +146,7 @@ if LANGCHAIN_AVAILABLE:
         # This is the key difference: LangChain REQUIRES you to manually
         # write wrapper functions to expose agents as tools.
         
-        @tool
+        @tool  # type: ignore[possibly-unbound]
         def get_weather_help(request: str) -> str:
             """Get weather information and recommendations. Use this for weather-related questions."""
             # Manual invocation of the agent
@@ -150,7 +156,7 @@ if LANGCHAIN_AVAILABLE:
             # Manual response extraction
             return result["messages"][-1].content
         
-        @tool
+        @tool  # type: ignore[possibly-unbound]
         def get_fitness_advice(request: str) -> str:
             """Get fitness advice and workout plans. Use this for fitness and exercise questions."""
             result = fitness_agent.invoke({
@@ -158,7 +164,7 @@ if LANGCHAIN_AVAILABLE:
             })
             return result["messages"][-1].content
         
-        @tool
+        @tool  # type: ignore[possibly-unbound]
         def get_nutrition_help(request: str) -> str:
             """Get nutrition advice and meal suggestions. Use this for diet and meal planning questions."""
             result = nutrition_agent.invoke({
@@ -184,7 +190,7 @@ if LANGCHAIN_AVAILABLE:
             "If the request doesn't fit any category, respond directly as a general assistant."
         )
         
-        supervisor_agent = create_agent(
+        supervisor_agent = create_agent(  # type: ignore[possibly-unbound]
             model,
             tools=[get_weather_help, get_fitness_advice, get_nutrition_help],
             system_prompt=SUPERVISOR_PROMPT
@@ -272,8 +278,9 @@ if __name__ == "__main__":
         try:
             asyncio.run(demo_langchain_supervisor())
         except RuntimeError:
-            # If already in event loop, run directly
-            demo_langchain_supervisor()
+            # If already in event loop, schedule the coroutine
+            import asyncio as _asyncio
+            _asyncio.ensure_future(demo_langchain_supervisor())  # type: ignore[func-returns-value]
     else:
         print("LangChain not installed.")
         print("\nTo run this example:")
